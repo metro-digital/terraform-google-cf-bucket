@@ -17,4 +17,13 @@ locals {
     var.labels,
     var.uniform_access ? {} : { cf_no_require_bucket_policy_only = true }
   )
+
+  iam_legacy_owner = [
+    "projectEditor:${var.project_id}",
+    "projectOwner:${var.project_id}",
+  ]
+
+  iam_legacy_reader = [
+    "projectViewer:${var.project_id}",
+  ]
 }

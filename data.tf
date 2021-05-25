@@ -18,21 +18,44 @@ data "google_iam_policy" "bucket" {
   # Storage Legacy roles
   #
   #######
+  # https://cloud.google.com/iam/docs/understanding-roles#cloud-storage-legacy-roles
+
   binding {
     role = "roles/storage.legacyBucketOwner"
-
-    members = [
-      "projectEditor:${var.project_id}",
-      "projectOwner:${var.project_id}",
-    ]
+    members = compact(concat(
+      var.additional_legacy_bucket_owners,
+      var.purge_legacy_roles ? [] : local.iam_legacy_owner
+    ))
   }
 
   binding {
     role = "roles/storage.legacyBucketReader"
+    members = compact(concat(
+      var.additional_legacy_bucket_readers,
+      var.purge_legacy_roles ? [] : local.iam_legacy_reader
+    ))
+  }
 
-    members = [
-      "projectViewer:${var.project_id}",
-    ]
+  binding {
+    role    = "roles/storage.legacyBucketWriter"
+    members = var.additional_legacy_bucket_writers
+  }
+
+
+  binding {
+    role = "roles/storage.legacyObjectOwner"
+    members = compact(concat(
+      var.additional_legacy_object_owners,
+      var.purge_legacy_roles ? [] : local.iam_legacy_owner
+    ))
+  }
+
+  binding {
+    role = "roles/storage.legacyObjectReader"
+    members = compact(concat(
+      var.additional_legacy_object_readers,
+      var.purge_legacy_roles ? [] : local.iam_legacy_reader
+    ))
   }
 
   #######
@@ -41,27 +64,24 @@ data "google_iam_policy" "bucket" {
   #
   #######
   # https://cloud.google.com/iam/docs/understanding-roles#storage-roles
-  binding {
-    role = "roles/storage.admin"
 
+  binding {
+    role    = "roles/storage.admin"
     members = compact(var.storage_admins)
   }
 
   binding {
-    role = "roles/storage.objectAdmin"
-
+    role    = "roles/storage.objectAdmin"
     members = compact(var.storage_object_admins)
   }
 
   binding {
-    role = "roles/storage.objectCreator"
-
+    role    = "roles/storage.objectCreator"
     members = compact(var.storage_object_creators)
   }
 
   binding {
-    role = "roles/storage.objectViewer"
-
+    role    = "roles/storage.objectViewer"
     members = compact(var.storage_object_viewers)
   }
 }
