@@ -149,27 +149,88 @@ variable "encryption" {
 /* IAM                                                                                            */
 /*                                                                                                */
 /**************************************************************************************************/
+variable "purge_legacy_roles" {
+  type        = bool
+  description = "If enabled the module will purge the default users from roles/storage.legacy* roles"
+  default     = false
+}
+
+variable "additional_legacy_bucket_owners" {
+  type        = list(string)
+  description = <<-EOD
+    List of additional users/groups/service accounts with role roles/storage.legacyBucketOwner on bucket level
+
+    If `purge_legacy_roles` is set to true, this list becomes authoritative.
+    Otherwise the default permissions will be added automatically. 
+  EOD
+  default     = []
+}
+
+variable "additional_legacy_bucket_readers" {
+  type        = list(string)
+  description = <<-EOD
+    List of additional users/groups/service accounts with role roles/storage.legacyBucketReader on bucket level
+    
+    If `purge_legacy_roles` is set to true, this list becomes authoritative.
+    Otherwise the default permissions will be added automatically. 
+  EOD
+  default     = []
+}
+
+variable "additional_legacy_bucket_writers" {
+  type        = list(string)
+  description = <<-EOD
+    List of additional users/groups/service accounts with role roles/storage.legacyBucketWriter on bucket level
+    
+    If `purge_legacy_roles` is set to true, this list becomes authoritative.
+    Otherwise the default permissions will be added automatically. 
+  EOD
+  default     = []
+}
+
+variable "additional_legacy_object_owners" {
+  type        = list(string)
+  description = <<-EOD
+    List of additional users/groups/service accounts with role roles/storage.legacyObjectOwner on bucket level
+    
+    If `purge_legacy_roles` is set to true, this list becomes authoritative.
+    Otherwise the default permissions will be added automatically. 
+  EOD
+  default     = []
+}
+
+variable "additional_legacy_object_readers" {
+  type        = list(string)
+  description = <<-EOD
+    List of additional users/groups/service accounts with role roles/storage.legacyObjectReader on bucket level
+    
+    If `purge_legacy_roles` is set to true, this list becomes authoritative.
+    Otherwise the default permissions will be added automatically. 
+  EOD
+  default     = []
+}
+
 variable "storage_admins" {
   type        = list(string)
-  description = "list of users with role roles/storage.admin on project level"
+  description = "list of users with role roles/storage.admin on bucket level (authoritative)"
   default     = []
 }
 
 variable "storage_object_admins" {
   type        = list(string)
-  description = "list of users with role roles/storage.objectAdmin on project level"
+  description = "list of users with role roles/storage.objectAdmin on bucket level (authoritative)"
   default     = []
 }
 
 variable "storage_object_creators" {
   type        = list(string)
-  description = "list of users with role roles/storage.objectCreator on project level"
+  description = "list of users with role roles/storage.objectCreator on bucket level (authoritative)"
   default     = []
 }
 
 variable "storage_object_viewers" {
   type        = list(string)
-  description = "list of users with role roles/storage.objectViewer on project level"
+  description = "list of users with role roles/storage.objectViewer on bucket level (authoritative)"
   default     = []
 }
 
