@@ -17,7 +17,7 @@ This module allows you to create and manage a Google Cloud Storage bucket.
 
 ## Compatibility
 
-This module requires [terraform] version >0.14. Additionally the [module_variable_optional_attrs] experiment is used.
+This module requires [terraform] version >1.0 Additionally the [module_variable_optional_attrs] experiment is used.
 
 ## Usage
 
