@@ -88,7 +88,6 @@ This project is licensed under the terms of the [Apache License 2.0](LICENSE)
 
 This [terraform] module depends on providers from HashiCorp, Inc. which are licensed under MPL-2.0. You can obtain the respective source code for these provider here:
   * [`hashicorp/google`](https://github.com/hashicorp/terraform-provider-google)
-  * [`hashicorp/google-beta`](https://github.com/hashicorp/terraform-provider-google-beta)
 
 [terraform]: https://terraform.io/
 [FAQ]: ./docs/FAQ.md
