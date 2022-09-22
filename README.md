@@ -17,7 +17,7 @@ This module allows you to create and manage a Google Cloud Storage bucket.
 
 ## Compatibility
 
-This module requires [terraform] version >1.0 Additionally the [module_variable_optional_attrs] experiment is used.
+This module requires [terraform] version >=1.3.
 
 ## Usage
 
@@ -92,4 +92,3 @@ This [terraform] module depends on providers from HashiCorp, Inc. which are lice
 [terraform]: https://terraform.io/
 [FAQ]: ./docs/FAQ.md
 [CONTRIBUTING]: docs/CONTRIBUTING.md
-[module_variable_optional_attrs]: https://www.terraform.io/docs/language/expressions/type-constraints.html#experimental-optional-object-type-attributes
