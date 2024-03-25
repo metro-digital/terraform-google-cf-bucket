@@ -1,4 +1,4 @@
-# Copyright 2021 METRO Digital GmbH
+# Copyright 2024 METRO Digital GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -219,6 +219,12 @@ variable "storage_admins" {
 variable "storage_object_admins" {
   type        = list(string)
   description = "list of users with role roles/storage.objectAdmin on bucket level (authoritative)"
+  default     = []
+}
+
+variable "storage_object_users" {
+  type        = list(string)
+  description = "list of users with role roles/storage.objectUser on bucket level (authoritative)"
   default     = []
 }
 
