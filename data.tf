@@ -1,4 +1,4 @@
-# Copyright 2021 METRO Digital GmbH
+# Copyright 2024 METRO Digital GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,6 +73,11 @@ data "google_iam_policy" "bucket" {
   binding {
     role    = "roles/storage.objectAdmin"
     members = compact(var.storage_object_admins)
+  }
+
+  binding {
+    role    = "roles/storage.objectUser"
+    members = compact(var.storage_object_users)
   }
 
   binding {
