@@ -45,7 +45,7 @@ module "tf-state-bucket" {
 }
 ```
 
-<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- BEGIN_TF_DOCS -->
 ## Inputs
 
 | Name | Description | Type | Default | Required |
@@ -81,7 +81,7 @@ module "tf-state-bucket" {
 | project | Bucket Project ID |
 | storage_class | Bucket's Storage Class |
 | versioning | Versioning configuration |
-<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- END_TF_DOCS -->
 
 ## License
 

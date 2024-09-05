@@ -47,7 +47,7 @@ variable "uniform_access" {
 variable "lifecycle_rules" {
   description = <<-EOD
     List of lifecycle rules to configure. Format is the same as described in provider documentation https://www.terraform.io/docs/providers/google/r/storage_bucket.html#lifecycle_rule except condition.matches_storage_class should be a comma delimited string.
-    
+
     Set of objects:
       action:
         map
@@ -161,7 +161,7 @@ variable "additional_legacy_bucket_owners" {
     List of additional users/groups/service accounts with role roles/storage.legacyBucketOwner on bucket level
 
     If `purge_legacy_roles` is set to true, this list becomes authoritative.
-    Otherwise the default permissions will be added automatically. 
+    Otherwise the default permissions will be added automatically.
   EOD
   default     = []
 }
@@ -170,9 +170,9 @@ variable "additional_legacy_bucket_readers" {
   type        = list(string)
   description = <<-EOD
     List of additional users/groups/service accounts with role roles/storage.legacyBucketReader on bucket level
-    
+
     If `purge_legacy_roles` is set to true, this list becomes authoritative.
-    Otherwise the default permissions will be added automatically. 
+    Otherwise the default permissions will be added automatically.
   EOD
   default     = []
 }
@@ -181,9 +181,9 @@ variable "additional_legacy_bucket_writers" {
   type        = list(string)
   description = <<-EOD
     List of additional users/groups/service accounts with role roles/storage.legacyBucketWriter on bucket level
-    
+
     If `purge_legacy_roles` is set to true, this list becomes authoritative.
-    Otherwise the default permissions will be added automatically. 
+    Otherwise the default permissions will be added automatically.
   EOD
   default     = []
 }
@@ -192,9 +192,9 @@ variable "additional_legacy_object_owners" {
   type        = list(string)
   description = <<-EOD
     List of additional users/groups/service accounts with role roles/storage.legacyObjectOwner on bucket level
-    
+
     If `purge_legacy_roles` is set to true, this list becomes authoritative.
-    Otherwise the default permissions will be added automatically. 
+    Otherwise the default permissions will be added automatically.
   EOD
   default     = []
 }
@@ -203,9 +203,9 @@ variable "additional_legacy_object_readers" {
   type        = list(string)
   description = <<-EOD
     List of additional users/groups/service accounts with role roles/storage.legacyObjectReader on bucket level
-    
+
     If `purge_legacy_roles` is set to true, this list becomes authoritative.
-    Otherwise the default permissions will be added automatically. 
+    Otherwise the default permissions will be added automatically.
   EOD
   default     = []
 }

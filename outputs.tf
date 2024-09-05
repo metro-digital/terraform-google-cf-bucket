@@ -36,4 +36,3 @@ output "versioning" {
   description = "Versioning configuration"
   value       = google_storage_bucket.bucket.versioning
 }
-
