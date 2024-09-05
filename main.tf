@@ -1,4 +1,4 @@
-# Copyright 2021 METRO Digital GmbH
+# Copyright 2024 METRO Digital GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,5 +56,9 @@ resource "google_storage_bucket" "bucket" {
     content {
       default_kms_key_name = encryption.value.default_kms_key_name
     }
+  }
+
+  soft_delete_policy {
+    retention_duration_seconds = var.soft_delete_retention_duration_seconds
   }
 }
