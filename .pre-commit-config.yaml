@@ -1,4 +1,4 @@
-# Copyright 2021 METRO Digital GmbH
+# Copyright 2024 METRO Digital GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,15 +13,36 @@
 # limitations under the License.
 
 repos:
-- repo: https://github.com/antonbabenko/pre-commit-terraform
-  rev: v1.50.0 # Get the latest from: https://github.com/antonbabenko/pre-commit-terraform/releases
-  hooks:
-    - id: terraform_fmt
-    - id: terraform_tflint
-    - id: terraform_tfsec
-    - id: terraform_docs
-- repo: https://github.com/thlorenz/doctoc
-  rev: v2.0.0  # Get the latest from: https://github.com/thlorenz/doctoc/releases
-  hooks:
-    - id: doctoc
-      args: ['--github', '--title', '## Table of Contents', '--update-only']
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 2c9f875913ee60ca25ce70243dc24d5b6415598c  # frozen: v4.6.0
+    hooks:
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: ['--fix', 'lf']
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: de816af0fa1e042a4eaaa357b4e508fd39aa2a2c  # frozen: v1.94.1
+    hooks:
+      - id: terraform_fmt
+        exclude: ^/.+/$
+      - id: terraform_tflint
+        exclude: ^/.+/$
+        args:
+          - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
+      - id: terraform_tfsec
+        exclude: ^/.+/$
+        args:
+          - --args=--config-file=__GIT_WORKING_DIR__/.tfsec/config.yml
+      - id: terraform_docs
+        args:
+          - --args=--config=.terraform-docs.yml
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: 81e9f98ffd059efe8aa9c1b1a42e5cce61b640c6  # frozen: v1.35.1
+    hooks:
+      - id: yamllint
+  - repo: https://github.com/thlorenz/doctoc
+    rev: 70fdcd39ef919754011a827bd25f23a0b141c3c3  # frozen: v2.2.0
+    hooks:
+      - id: doctoc
+        args: ['--github', '--title', '## Table of Contents', '--update-only']

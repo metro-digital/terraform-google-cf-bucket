@@ -85,4 +85,3 @@ data "google_iam_policy" "bucket" {
     members = compact(var.storage_object_viewers)
   }
 }
-
