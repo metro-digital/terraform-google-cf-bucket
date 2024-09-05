@@ -1,4 +1,4 @@
-# Copyright 2021 METRO Digital GmbH
+# Copyright 2024 METRO Digital GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -234,3 +234,13 @@ variable "storage_object_viewers" {
   default     = []
 }
 
+variable "soft_delete_retention_duration_seconds" {
+  type        = number
+  description = "Duration in seconds controlling the soft delete retention of storage object. The value must be in between 604800 seconds (7 days) and 7776000 (90 days). To disable the feature, set the value to 0."
+  default     = 7 * 24 * 60 * 60 # 1 week, Google's default
+
+  validation {
+    condition     = var.soft_delete_retention_duration_seconds == 0 || (var.soft_delete_retention_duration_seconds >= 7 * 24 * 60 * 60 && var.soft_delete_retention_duration_seconds <= 90 * 24 * 60 * 60)
+    error_message = "The value must be in between 604800 seconds (7 days) and 7776000 (90 days) or 0 to disable the feature."
+  }
+}

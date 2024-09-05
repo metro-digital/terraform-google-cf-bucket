@@ -63,6 +63,7 @@ module "tf-state-bucket" {
 | location | The GCS location - see https://cloud.google.com/storage/docs/bucket-locations | `string` | `"EU"` | no |
 | logging | Bucket's Access & Storage Logs configuration<br><br>The logging block supports:<br>  * log_bucket - (Required) The bucket that will receive log objects.<br>  * log_object_prefix - (Optional, Computed) The object prefix for log objects. If it's not provided, by default GCS sets this to this bucket's name.<br><br>Example:<pre>logging = [{<br>  log_bucket        = "some-bucket-to-log-into"<br>  log_object_prefix = "my-prefix"<br>}]</pre> | <pre>set(object({<br>    log_bucket        = string<br>    log_object_prefix = optional(string)<br>  }))</pre> | `[]` | no |
 | purge_legacy_roles | If enabled the module will purge the default users from roles/storage.legacy* roles | `bool` | `false` | no |
+| soft_delete_retention_duration_seconds | Duration in seconds controlling the soft delete retention of storage object. The value must be in between 604800 seconds (7 days) and 7776000 (90 days). To disable the feature, set the value to 0. | `number` | `604800` | no |
 | storage_admins | list of users with role roles/storage.admin on bucket level (authoritative) | `list(string)` | `[]` | no |
 | storage_class | Bucket's Storage Class | `string` | `"REGIONAL"` | no |
 | storage_object_admins | list of users with role roles/storage.objectAdmin on bucket level (authoritative) | `list(string)` | `[]` | no |
