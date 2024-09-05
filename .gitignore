@@ -22,3 +22,4 @@ account.json
 .Trashes
 ehthumbs.db
 Thumbs.db
+.terraform.lock.hcl
