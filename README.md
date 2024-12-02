@@ -67,6 +67,7 @@ module "tf-state-bucket" {
 | storage_admins | list of users with role roles/storage.admin on bucket level (authoritative) | `list(string)` | `[]` | no |
 | storage_class | Bucket's Storage Class | `string` | `"REGIONAL"` | no |
 | storage_object_admins | list of users with role roles/storage.objectAdmin on bucket level (authoritative) | `list(string)` | `[]` | no |
+| storage_object_users | list of users with role roles/storage.objectCreator on bucket level (authoritative) | `list(string)` | `[]` | no |
 | storage_object_creators | list of users with role roles/storage.objectCreator on bucket level (authoritative) | `list(string)` | `[]` | no |
 | storage_object_viewers | list of users with role roles/storage.objectViewer on bucket level (authoritative) | `list(string)` | `[]` | no |
 | uniform_access | Enables Uniform bucket-level access to a bucket | `bool` | `true` | no |

@@ -222,6 +222,12 @@ variable "storage_object_admins" {
   default     = []
 }
 
+variable "storage_object_users" {
+  type        = list(string)
+  description = "list of users with role roles/storage.objectUser on bucket level (authoritative)"
+  default     = []
+}
+
 variable "storage_object_creators" {
   type        = list(string)
   description = "list of users with role roles/storage.objectCreator on bucket level (authoritative)"

@@ -76,6 +76,11 @@ data "google_iam_policy" "bucket" {
   }
 
   binding {
+    role    = "roles/storage.objectUser"
+    members = compact(var.storage_object_users)
+  }
+
+  binding {
     role    = "roles/storage.objectCreator"
     members = compact(var.storage_object_creators)
   }
