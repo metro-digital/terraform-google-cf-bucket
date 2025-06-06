@@ -144,6 +144,16 @@ variable "encryption" {
   default = []
 }
 
+variable "public_access_prevention" {
+  description = "Bucket's public access prevention configuration. Must be either 'inherited' or 'enforced'. A bucket's public access prevention configuration must at least be as restrictive as the active organisation policy. It is recommended to use the public access prevention configuration 'inherited' in an organisation that already controls public access prevention via an organisation policy."
+  type        = string
+  default     = "inherited"
+  validation {
+    condition     = var.public_access_prevention == "inherited" || var.public_access_prevention == "enforced"
+    error_message = "The public access prevention configuration must be either 'inherited' or 'enforced'."
+  }
+}
+
 /**************************************************************************************************/
 /*                                                                                                */
 /* IAM                                                                                            */

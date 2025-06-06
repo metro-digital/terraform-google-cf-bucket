@@ -61,4 +61,6 @@ resource "google_storage_bucket" "bucket" {
   soft_delete_policy {
     retention_duration_seconds = var.soft_delete_retention_duration_seconds
   }
+
+  public_access_prevention = var.public_access_prevention
 }
