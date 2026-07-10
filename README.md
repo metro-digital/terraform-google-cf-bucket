@@ -49,7 +49,7 @@ module "tf-state-bucket" {
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | name | Bucket name | `string` | n/a | yes |
 | project_id | GCP project ID | `string` | n/a | yes |
 | additional_legacy_bucket_owners | List of additional users/groups/service accounts with role roles/storage.legacyBucketOwner on bucket level<br/><br/>If `purge_legacy_roles` is set to true, this list becomes authoritative.<br/>Otherwise the default permissions will be added automatically. | `list(string)` | `[]` | no |
@@ -76,7 +76,7 @@ module "tf-state-bucket" {
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | location | Bucket location |
 | name | Bucket name |
 | project | Bucket Project ID |
