@@ -1,53 +1,63 @@
 ---
-# yamllint disable rule:line-length
 name: pre-commit
 
 on:  # yamllint disable-line rule:truthy
   pull_request:
 
 permissions:
-  pull-requests: write
+  contents: read
 
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: '1.16.5'
+          terraform_wrapper: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
 
       - name: Install terraform-docs
+        env:
+          TERRAFORM_DOCS_VERSION: '0.24.0'
         run: |
-          curl -L "$(curl -s https://api.github.com/repos/terraform-docs/terraform-docs/releases/latest |
-            grep -o -E -m 1 "https://.+?-linux-amd64.tar.gz")" > terraform-docs.tgz && \
-            tar -xzf terraform-docs.tgz terraform-docs && rm terraform-docs.tgz && chmod +x terraform-docs && \
-            sudo mv terraform-docs /usr/bin/
-      - name: Install tflint
-        run: |
-          # tflint
-          curl -L "$(curl -s https://api.github.com/repos/terraform-linters/tflint/releases/latest |
-            grep -o -E -m 1 "https://.+?_linux_amd64.zip")" > tflint.zip && \
-            unzip tflint.zip && rm tflint.zip && sudo mv tflint /usr/bin/
-      - name: Install tfsec
-        run: |
-          curl -L "$(curl -s https://api.github.com/repos/aquasecurity/tfsec/releases/latest |
-            grep -o -E -m 1 "https://.+?tfsec-linux-amd64")" > tfsec && \
-            chmod +x tfsec && sudo mv tfsec /usr/bin/
+          curl --fail --location --retry 3 \
+            "https://github.com/terraform-docs/terraform-docs/releases/download/v${TERRAFORM_DOCS_VERSION}/terraform-docs-v${TERRAFORM_DOCS_VERSION}-linux-amd64.tar.gz" \
+            --output "${RUNNER_TEMP}/terraform-docs.tgz"
+          tar -xzf "${RUNNER_TEMP}/terraform-docs.tgz" -C "${RUNNER_TEMP}" terraform-docs
+          sudo install "${RUNNER_TEMP}/terraform-docs" /usr/local/bin/terraform-docs
 
-      - name: pre-commit
-        uses: pre-commit/action@v3.0.0
-
-      - name: Failure
-        if: ${{ failure() }}
-        uses: actions/github-script@v7
+      - name: Install TFLint
+        uses: terraform-linters/setup-tflint@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: 'pre-commit failed! Please ensure pre-commit doesnt report any error.'
-            })
+          tflint_version: 'v0.61.0'
+          cache: 'true'
+          github_token: ${{ github.token }}
+
+      - name: Install tfsec
+        env:
+          TFSEC_VERSION: '1.28.14'
+        run: |
+          curl --fail --location --retry 3 \
+            "https://github.com/aquasecurity/tfsec/releases/download/v${TFSEC_VERSION}/tfsec-linux-amd64" \
+            --output "${RUNNER_TEMP}/tfsec"
+          sudo install "${RUNNER_TEMP}/tfsec" /usr/local/bin/tfsec
+
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
