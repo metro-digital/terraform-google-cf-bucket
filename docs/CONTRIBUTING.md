@@ -62,6 +62,37 @@ Dependabot checks GitHub Actions and pre-commit dependencies daily. Security upd
 and ordinary version updates are grouped separately for each ecosystem. Review
 these updates and run the checks before merging.
 
+## Terraform Regression Tests
+
+Run the credential-free mocked suite with Terraform 1.7 or later:
+
+```sh
+terraform init -backend=false -input=false
+terraform test
+```
+
+The test runner needs a newer Terraform version than the module's existing 1.3
+runtime minimum because provider mocking was introduced in Terraform 1.7. Provider
+plugins are still downloaded during initialization, but every test uses a mocked
+Google provider and creates no cloud resources.
+
+The suite covers defaults and outputs, labels, lifecycle rules, logging,
+encryption, public-access prevention, soft-delete boundaries, legacy and modern
+IAM bindings, and invalid inputs. Tests preserve the v1 interface as a baseline
+for the v2 refactor.
+
+Most scenarios use a mocked plan. One mocked apply verifies the IAM resource's
+policy wiring after resolving its dependency on bucket creation. IAM assertions
+inspect configured data-source bindings: the mock returns fixed policy JSON and
+does not test Google's policy serialization or API behavior. State-backed upgrade
+plans and real integration checks remain separate from these regression tests.
+
+To run a single test file:
+
+```sh
+terraform test -filter=tests/iam.tftest.hcl
+```
+
 ## Compatibility CI and Reporting
 
 `terraform-test` discovers the latest stable patch of every Terraform minor

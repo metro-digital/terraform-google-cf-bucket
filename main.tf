@@ -54,7 +54,7 @@ resource "google_storage_bucket" "bucket" {
   dynamic "encryption" {
     for_each = var.encryption
     content {
-      default_kms_key_name = encryption.value.default_kms_key_name
+      default_kms_key_name = encryption.value
     }
   }
 
