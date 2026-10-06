@@ -15,7 +15,7 @@
 locals {
   labels = merge(
     var.labels,
-    var.uniform_access ? {} : { cf_no_require_bucket_policy_only = true }
+    var.uniform_access ? {} : { cf_no_require_bucket_policy_only = "true" }
   )
 
   iam_legacy_owner = [
@@ -26,4 +26,21 @@ locals {
   iam_legacy_reader = [
     "projectViewer:${var.project_id}",
   ]
+
+  iam_legacy_defaults = var.purge_legacy_roles ? {} : {
+    "roles/storage.legacyBucketOwner"  = local.iam_legacy_owner
+    "roles/storage.legacyBucketReader" = local.iam_legacy_reader
+    "roles/storage.legacyObjectOwner"  = local.iam_legacy_owner
+    "roles/storage.legacyObjectReader" = local.iam_legacy_reader
+  }
+
+  # Merge rather than overwrite legacy principals. Empty bindings are omitted.
+  iam_members = {
+    for role in setunion(toset(keys(local.iam_legacy_defaults)), toset(keys(var.iam_bindings))) :
+    role => toset(compact(concat(
+      lookup(local.iam_legacy_defaults, role, []),
+      try(tolist(var.iam_bindings[role]), [])
+    )))
+  }
+  iam_bindings = { for role, members in local.iam_members : role => members if length(members) > 0 }
 }

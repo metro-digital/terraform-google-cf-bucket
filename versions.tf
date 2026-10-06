@@ -16,8 +16,12 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = ">= 5.22"
+      version = ">= 7.26, < 9.0"
     }
   }
   required_version = ">= 1.3"
+
+  provider_meta "google" {
+    module_name = "metro/cf/bucket/v2.0.0"
+  }
 }

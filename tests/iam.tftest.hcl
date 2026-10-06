@@ -35,7 +35,7 @@ run "default_legacy_policy" {
   }
 
   assert {
-    condition     = length(one([for binding in data.google_iam_policy.bucket.binding : binding.members if binding.role == "roles/storage.legacyBucketWriter"])) == 0
+    condition     = length([for binding in data.google_iam_policy.bucket.binding : binding if binding.role == "roles/storage.legacyBucketWriter"]) == 0
     error_message = "Default membership must remain stable for legacyBucketWriter."
   }
 
@@ -50,22 +50,22 @@ run "default_legacy_policy" {
   }
 
   assert {
-    condition     = length(one([for binding in data.google_iam_policy.bucket.binding : binding.members if binding.role == "roles/storage.admin"])) == 0
+    condition     = length([for binding in data.google_iam_policy.bucket.binding : binding if binding.role == "roles/storage.admin"]) == 0
     error_message = "Default membership must remain stable for admin."
   }
 
   assert {
-    condition     = length(one([for binding in data.google_iam_policy.bucket.binding : binding.members if binding.role == "roles/storage.objectAdmin"])) == 0
+    condition     = length([for binding in data.google_iam_policy.bucket.binding : binding if binding.role == "roles/storage.objectAdmin"]) == 0
     error_message = "Default membership must remain stable for objectAdmin."
   }
 
   assert {
-    condition     = length(one([for binding in data.google_iam_policy.bucket.binding : binding.members if binding.role == "roles/storage.objectCreator"])) == 0
+    condition     = length([for binding in data.google_iam_policy.bucket.binding : binding if binding.role == "roles/storage.objectCreator"]) == 0
     error_message = "Default membership must remain stable for objectCreator."
   }
 
   assert {
-    condition     = length(one([for binding in data.google_iam_policy.bucket.binding : binding.members if binding.role == "roles/storage.objectViewer"])) == 0
+    condition     = length([for binding in data.google_iam_policy.bucket.binding : binding if binding.role == "roles/storage.objectViewer"]) == 0
     error_message = "Default membership must remain stable for objectViewer."
   }
 }
@@ -73,15 +73,17 @@ run "default_legacy_policy" {
 run "additional_members_with_defaults" {
   command = plan
   variables {
-    additional_legacy_bucket_owners  = ["user:legacyBucketOwner@example.com"]
-    additional_legacy_bucket_readers = ["user:legacyBucketReader@example.com"]
-    additional_legacy_bucket_writers = ["user:legacyBucketWriter@example.com"]
-    additional_legacy_object_owners  = ["user:legacyObjectOwner@example.com"]
-    additional_legacy_object_readers = ["user:legacyObjectReader@example.com"]
-    storage_admins                   = ["user:admin@example.com"]
-    storage_object_admins            = ["user:objectAdmin@example.com"]
-    storage_object_creators          = ["user:objectCreator@example.com"]
-    storage_object_viewers           = ["user:objectViewer@example.com"]
+    iam_bindings = {
+      "roles/storage.legacyBucketOwner"  = ["user:legacyBucketOwner@example.com"]
+      "roles/storage.legacyBucketReader" = ["user:legacyBucketReader@example.com"]
+      "roles/storage.legacyBucketWriter" = ["user:legacyBucketWriter@example.com"]
+      "roles/storage.legacyObjectOwner"  = ["user:legacyObjectOwner@example.com"]
+      "roles/storage.legacyObjectReader" = ["user:legacyObjectReader@example.com"]
+      "roles/storage.admin"              = ["user:admin@example.com"]
+      "roles/storage.objectAdmin"        = ["user:objectAdmin@example.com"]
+      "roles/storage.objectCreator"      = ["user:objectCreator@example.com"]
+      "roles/storage.objectViewer"       = ["user:objectViewer@example.com"]
+    }
   }
 
   assert {
@@ -133,16 +135,18 @@ run "additional_members_with_defaults" {
 run "purge_retains_explicit_members" {
   command = plan
   variables {
-    purge_legacy_roles               = true
-    additional_legacy_bucket_owners  = ["user:legacyBucketOwner@example.com"]
-    additional_legacy_bucket_readers = ["user:legacyBucketReader@example.com"]
-    additional_legacy_bucket_writers = ["user:legacyBucketWriter@example.com"]
-    additional_legacy_object_owners  = ["user:legacyObjectOwner@example.com"]
-    additional_legacy_object_readers = ["user:legacyObjectReader@example.com"]
-    storage_admins                   = ["user:admin@example.com"]
-    storage_object_admins            = ["user:objectAdmin@example.com"]
-    storage_object_creators          = ["user:objectCreator@example.com"]
-    storage_object_viewers           = ["user:objectViewer@example.com"]
+    purge_legacy_roles = true
+    iam_bindings = {
+      "roles/storage.legacyBucketOwner"  = ["user:legacyBucketOwner@example.com"]
+      "roles/storage.legacyBucketReader" = ["user:legacyBucketReader@example.com"]
+      "roles/storage.legacyBucketWriter" = ["user:legacyBucketWriter@example.com"]
+      "roles/storage.legacyObjectOwner"  = ["user:legacyObjectOwner@example.com"]
+      "roles/storage.legacyObjectReader" = ["user:legacyObjectReader@example.com"]
+      "roles/storage.admin"              = ["user:admin@example.com"]
+      "roles/storage.objectAdmin"        = ["user:objectAdmin@example.com"]
+      "roles/storage.objectCreator"      = ["user:objectCreator@example.com"]
+      "roles/storage.objectViewer"       = ["user:objectViewer@example.com"]
+    }
   }
 
   assert {
@@ -198,38 +202,42 @@ run "purge_all_legacy_defaults" {
   }
 
   assert {
-    condition     = alltrue([for binding in data.google_iam_policy.bucket.binding : length(binding.members) == 0])
+    condition     = length(data.google_iam_policy.bucket.binding) == 0
     error_message = "Purging without additional members must remove all default principals."
   }
 }
 
-run "compact_modern_members" {
+run "compact_and_deduplicate_members" {
   command = plan
   variables {
-    storage_admins          = ["", "user:member@example.com"]
-    storage_object_admins   = ["", "user:member@example.com"]
-    storage_object_creators = ["", "user:member@example.com"]
-    storage_object_viewers  = ["", "user:member@example.com"]
-  }
-
-  assert {
-    condition     = toset(one([for binding in data.google_iam_policy.bucket.binding : binding.members if binding.role == "roles/storage.admin"])) == toset(["user:member@example.com"])
-    error_message = "Empty modern-role members must be removed."
-  }
-
-  assert {
-    condition     = toset(one([for binding in data.google_iam_policy.bucket.binding : binding.members if binding.role == "roles/storage.objectAdmin"])) == toset(["user:member@example.com"])
-    error_message = "Empty modern-role members must be removed."
-  }
-
-  assert {
-    condition     = toset(one([for binding in data.google_iam_policy.bucket.binding : binding.members if binding.role == "roles/storage.objectCreator"])) == toset(["user:member@example.com"])
-    error_message = "Empty modern-role members must be removed."
+    iam_bindings = { "roles/storage.objectViewer" = ["", "user:member@example.com", "user:member@example.com"], "roles/storage.objectCreator" = [""] }
   }
 
   assert {
     condition     = toset(one([for binding in data.google_iam_policy.bucket.binding : binding.members if binding.role == "roles/storage.objectViewer"])) == toset(["user:member@example.com"])
-    error_message = "Empty modern-role members must be removed."
+    error_message = "Empty and duplicate members must be removed."
+  }
+
+  assert {
+    condition     = length([for binding in data.google_iam_policy.bucket.binding : binding if binding.role == "roles/storage.objectCreator"]) == 0
+    error_message = "Empty bindings must be omitted."
+  }
+}
+
+run "custom_and_additional_roles" {
+  command = plan
+  variables {
+    purge_legacy_roles = true
+    iam_bindings = {
+      "projects/cf-unit-test/roles/bucketReader" = ["group:readers@example.com"]
+      "organizations/123456/roles/bucketWriter"  = ["serviceAccount:writer@cf-unit-test.iam.gserviceaccount.com"]
+      "roles/storage.objectUser"                 = ["user:editor@example.com"]
+    }
+  }
+
+  assert {
+    condition     = length(data.google_iam_policy.bucket.binding) == 3 && local.iam_bindings["projects/cf-unit-test/roles/bucketReader"] == toset(["group:readers@example.com"]) && local.iam_bindings["organizations/123456/roles/bucketWriter"] == toset(["serviceAccount:writer@cf-unit-test.iam.gserviceaccount.com"])
+    error_message = "Custom project and organization roles and other predefined roles must be supported."
   }
 }
 

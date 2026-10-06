@@ -35,22 +35,27 @@ repos:
       - id: terraform_tflint
         args:
           - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
-      - id: terraform_tfsec
+      - id: terraform_trivy
         args:
-          - --args=--config-file=__GIT_WORKING_DIR__/.tfsec/config.yml
+          - --args=--ignorefile=__GIT_WORKING_DIR__/.trivyignore
       - id: terraform_docs
         exclude: ^examples/
         args:
-          - --args=--config=.terraform-docs.yml
+          - --args=--config=.terraform-docs.yaml
   - repo: https://github.com/adrienverge/yamllint
     rev: cba56bcde1fdd01c1deb3f945e69764c291a6530  # frozen: v1.38.0
     hooks:
       - id: yamllint
-  - repo: https://github.com/thlorenz/doctoc
-    rev: 70fdcd39ef919754011a827bd25f23a0b141c3c3  # frozen: v2.2.0
+  - repo: https://github.com/hukkin/mdformat
+    rev: 2d496dbc18e31b83a1596685347ffe0b6041daf0  # frozen: 1.0.0
     hooks:
-      - id: doctoc
-        args: ['--github', '--title', '## Table of Contents', '--update-only']
+      - id: mdformat
+        exclude: ^docs/(TERRAFORM|CHANGELOG)\.md$
+        additional_dependencies:
+          - mdformat-gfm
+          - mdformat-gfm-alerts
+          - mdformat-shfmt
+          - mdformat-toc
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
     rev: 1f1ac45c93d1c2ce36b71330252c489a5f4f2724  # frozen: v9.27.0
     hooks:

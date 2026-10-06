@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Object versioning is an explicit caller choice; soft deletion provides default recovery.
+#trivy:ignore:GCP-0078
 resource "google_storage_bucket" "bucket" {
   provider                    = google
   name                        = var.name
@@ -27,14 +29,14 @@ resource "google_storage_bucket" "bucket" {
     content {
       action {
         type          = lifecycle_rule.value.action.type
-        storage_class = lookup(lifecycle_rule.value.action, "storage_class", null)
+        storage_class = lifecycle_rule.value.action.storage_class
       }
       condition {
-        age                   = lookup(lifecycle_rule.value.condition, "age", null)
-        created_before        = lookup(lifecycle_rule.value.condition, "created_before", null)
-        with_state            = lookup(lifecycle_rule.value.condition, "with_state", null)
-        matches_storage_class = contains(keys(lifecycle_rule.value.condition), "matches_storage_class") ? split(",", lifecycle_rule.value.condition["matches_storage_class"]) : null
-        num_newer_versions    = lookup(lifecycle_rule.value.condition, "num_newer_versions", null)
+        age                   = lifecycle_rule.value.condition.age
+        created_before        = lifecycle_rule.value.condition.created_before
+        with_state            = lifecycle_rule.value.condition.with_state
+        matches_storage_class = lifecycle_rule.value.condition.matches_storage_class
+        num_newer_versions    = lifecycle_rule.value.condition.num_newer_versions
       }
     }
   }
@@ -44,17 +46,38 @@ resource "google_storage_bucket" "bucket" {
   }
 
   dynamic "logging" {
-    for_each = var.logging
+    for_each = var.logging == null ? [] : [var.logging]
     content {
       log_bucket        = logging.value.log_bucket
-      log_object_prefix = lookup(logging.value, "log_object_prefix", null)
+      log_object_prefix = logging.value.log_object_prefix
     }
   }
 
   dynamic "encryption" {
-    for_each = var.encryption
+    for_each = var.encryption == null ? [] : [var.encryption]
     content {
-      default_kms_key_name = encryption.value
+      default_kms_key_name = encryption.value.default_kms_key_name
+
+      dynamic "google_managed_encryption_enforcement_config" {
+        for_each = encryption.value.google_managed_encryption_enforcement_config == null ? [] : [encryption.value.google_managed_encryption_enforcement_config]
+        content {
+          restriction_mode = google_managed_encryption_enforcement_config.value.restriction_mode
+        }
+      }
+
+      dynamic "customer_managed_encryption_enforcement_config" {
+        for_each = encryption.value.customer_managed_encryption_enforcement_config == null ? [] : [encryption.value.customer_managed_encryption_enforcement_config]
+        content {
+          restriction_mode = customer_managed_encryption_enforcement_config.value.restriction_mode
+        }
+      }
+
+      dynamic "customer_supplied_encryption_enforcement_config" {
+        for_each = encryption.value.customer_supplied_encryption_enforcement_config == null ? [] : [encryption.value.customer_supplied_encryption_enforcement_config]
+        content {
+          restriction_mode = customer_supplied_encryption_enforcement_config.value.restriction_mode
+        }
+      }
     }
   }
 

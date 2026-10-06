@@ -25,8 +25,8 @@ run "bucket_defaults" {
   command = plan
 
   assert {
-    condition     = output.name == "cf-unit-test-bucket" && output.project == "cf-unit-test" && output.location == "EU" && output.storage_class == "REGIONAL"
-    error_message = "The existing identity, location and storage-class defaults must remain stable."
+    condition     = output.name == "cf-unit-test-bucket" && output.project == "cf-unit-test" && output.location == "EU" && output.storage_class == "STANDARD"
+    error_message = "Identity and location defaults must remain stable; v2 storage class must be STANDARD."
   }
 
   assert {

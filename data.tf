@@ -1,4 +1,4 @@
-# Copyright 2024 METRO Digital GmbH
+# Copyright 2026 METRO Digital GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,75 +13,11 @@
 # limitations under the License.
 
 data "google_iam_policy" "bucket" {
-  #######
-  #
-  # Storage Legacy roles
-  #
-  #######
-  # https://cloud.google.com/iam/docs/understanding-roles#cloud-storage-legacy-roles
-
-  binding {
-    role = "roles/storage.legacyBucketOwner"
-    members = compact(concat(
-      var.additional_legacy_bucket_owners,
-      var.purge_legacy_roles ? [] : local.iam_legacy_owner
-    ))
-  }
-
-  binding {
-    role = "roles/storage.legacyBucketReader"
-    members = compact(concat(
-      var.additional_legacy_bucket_readers,
-      var.purge_legacy_roles ? [] : local.iam_legacy_reader
-    ))
-  }
-
-  binding {
-    role    = "roles/storage.legacyBucketWriter"
-    members = var.additional_legacy_bucket_writers
-  }
-
-
-  binding {
-    role = "roles/storage.legacyObjectOwner"
-    members = compact(concat(
-      var.additional_legacy_object_owners,
-      var.purge_legacy_roles ? [] : local.iam_legacy_owner
-    ))
-  }
-
-  binding {
-    role = "roles/storage.legacyObjectReader"
-    members = compact(concat(
-      var.additional_legacy_object_readers,
-      var.purge_legacy_roles ? [] : local.iam_legacy_reader
-    ))
-  }
-
-  #######
-  #
-  # Storage roles
-  #
-  #######
-  # https://cloud.google.com/iam/docs/understanding-roles#storage-roles
-
-  binding {
-    role    = "roles/storage.admin"
-    members = compact(var.storage_admins)
-  }
-
-  binding {
-    role    = "roles/storage.objectAdmin"
-    members = compact(var.storage_object_admins)
-  }
-
-  binding {
-    role    = "roles/storage.objectCreator"
-    members = compact(var.storage_object_creators)
-  }
-
-  binding {
-    role    = "roles/storage.objectViewer"
-    members = compact(var.storage_object_viewers)
+  dynamic "binding" {
+    for_each = local.iam_bindings
+    content {
+      role    = binding.key
+      members = binding.value
+    }
   }
 }
