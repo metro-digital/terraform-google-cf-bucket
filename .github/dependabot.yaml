@@ -1,0 +1,34 @@
+---
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    commit-message:
+      prefix: build
+    directory: "/"
+    schedule:
+      interval: "daily"
+    groups:
+      github-actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pre-commit"
+    commit-message:
+      prefix: build
+    directory: "/"
+    schedule:
+      interval: "daily"
+    groups:
+      pre-commit-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      pre-commit:
+        applies-to: version-updates
+        patterns:
+          - "*"

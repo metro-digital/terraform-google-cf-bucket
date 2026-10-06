@@ -6,8 +6,9 @@ with the owners of this repository before making a change.
 ## Pull Request Process
 
 1. Update the README.md with details of changes to the interface.
-2. Increase the version numbers in any examples files and the README.md to the new version that this
-   Pull Request would represent. The versioning scheme we use is [SemVer](http://semver.org/).
+2. Use [Conventional Commits] for commit messages. Mark incompatible changes with `!` and a
+   `BREAKING CHANGE:` footer describing the migration. Release-please determines the next
+   [SemVer](https://semver.org/) version from these messages.
 3. You may merge the Pull Request in once you have the sign-off of one other developer, or if you
    do not have permission to do that, you may request a reviewer to merge it for you.
 
@@ -19,6 +20,9 @@ The following dependencies must be installed on the development system:
         - [tfsec]
         - [tflint]
     - [pre-commit git hooks for doctoc][pcf-doctoc]
+- [terraform-docs]
+- Node.js and npm for doctoc and commitlint
+- Terraform
 
 ## Generating Documentation for inputs and outputs
 The Inputs and Outputs tables in the README are automatically generated based on
@@ -26,7 +30,7 @@ the `variables` and `outputs` of the module. These tables must be refreshed if t
 module interfaces are changed.
 
 ### Execution
-Documentation is updated when running the pre-commiot hooks: `pre-commit run -a`
+Documentation is updated when running the pre-commit hooks: `pre-commit run -a`
 
 [pcf]: https://pre-commit.com/
 [pcf-tf]: https://github.com/antonbabenko/pre-commit-terraform
@@ -34,3 +38,70 @@ Documentation is updated when running the pre-commiot hooks: `pre-commit run -a`
 [terraform]: https://terraform.io/
 [tflint]: https://github.com/terraform-linters/tflint
 [tfsec]: https://github.com/tfsec/tfsec
+
+## Installing and Running Hooks
+
+Install both the source checks and commit-message hook:
+
+```sh
+pre-commit install
+pre-commit run --all-files
+```
+
+The configuration installs `pre-commit` and `commit-msg` hooks. Commitlint validates
+Conventional Commits locally and in the pull-request workflow. Signed Dependabot
+commits and its standard dependency-bump messages are accepted.
+
+Update hook versions while retaining immutable commit references with:
+
+```sh
+pre-commit autoupdate --freeze
+```
+
+Dependabot checks GitHub Actions and pre-commit dependencies daily. Security updates
+and ordinary version updates are grouped separately for each ecosystem. Review
+these updates and run the checks before merging.
+
+## Compatibility CI and Reporting
+
+`terraform-test` discovers the latest stable patch of every Terraform minor
+series from 1.7 onward, excluding prereleases, and crosses them with the latest
+Google provider 5.x, 6.x, 7.x and 8.x releases. One additional job uses the oldest
+tested Terraform series and Google 5.22.0 to verify the published provider minimum.
+A separate initialization/validation job checks the module on Terraform 1.3.10
+with Google 5.22.0; it does not run the newer mocked test language.
+The Google Beta provider is not used by this module.
+
+Each job creates a temporary provider override and initializes with `-upgrade`,
+then runs recursive formatting, module validation and the full mocked suite.
+Exact installed versions and outcomes are written to job summaries and artifacts.
+The reporting validator accepts canonical provider-major identifiers independently
+of the matrix so adding a major does not break the trusted publisher on `main`.
+
+`terraform-test-comment` runs trusted code from the default branch after the test
+workflow completes. It validates artifacts, creates or updates one bot comment,
+and skips outdated PR commits and run attempts. Partial reruns replace only their
+own results. The publisher becomes active once its workflow and scripts reach
+`main`; it cannot publish this refactor's initial pre-merge results.
+
+`Pipeline Status` aggregates check runs and commit statuses. After verifying the
+workflow on GitHub, configure branch protection to require `pipeline-status`.
+Repository settings and end-to-end workflow execution are maintainer release checks.
+
+## Releases
+
+Release-please runs after pushes to `main`. It opens a draft release pull request
+with the version manifest and `docs/CHANGELOG.md` updates. A maintainer reviews and
+merges that pull request to publish the GitHub release and `v`-prefixed version tag.
+
+The initial manifest starts at `1.3.0`, the existing `v1.3.0` tag. The bootstrap SHA
+points to that tag so the first automated release considers subsequent commits.
+Breaking feature commits in the v2 refactor will advance the release to `2.0.0`;
+the tooling commit alone does not force a major release.
+
+The workflow uses `GITHUB_TOKEN`. Repository Actions settings must allow GitHub
+Actions to create pull requests. Events created with this token do not start other
+workflows, so release pull requests may need a maintainer-triggered check run.
+
+[Conventional Commits]: https://www.conventionalcommits.org/en/v1.0.0/
+[terraform-docs]: https://terraform-docs.io/

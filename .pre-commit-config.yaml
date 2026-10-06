@@ -12,9 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
+default_stages:
+  - pre-commit
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: 2c9f875913ee60ca25ce70243dc24d5b6415598c  # frozen: v4.6.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
     hooks:
       - id: detect-private-key
       - id: end-of-file-fixer
@@ -22,23 +29,21 @@ repos:
       - id: mixed-line-ending
         args: ['--fix', 'lf']
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: de816af0fa1e042a4eaaa357b4e508fd39aa2a2c  # frozen: v1.94.1
+    rev: 80c8033123f6d6b9ccd1a9458562ea4180742af7  # frozen: v1.109.2
     hooks:
       - id: terraform_fmt
-        exclude: ^/.+/$
       - id: terraform_tflint
-        exclude: ^/.+/$
         args:
           - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
       - id: terraform_tfsec
-        exclude: ^/.+/$
         args:
           - --args=--config-file=__GIT_WORKING_DIR__/.tfsec/config.yml
       - id: terraform_docs
+        exclude: ^examples/
         args:
           - --args=--config=.terraform-docs.yml
-  - repo: https://github.com/adrienverge/yamllint.git
-    rev: 81e9f98ffd059efe8aa9c1b1a42e5cce61b640c6  # frozen: v1.35.1
+  - repo: https://github.com/adrienverge/yamllint
+    rev: cba56bcde1fdd01c1deb3f945e69764c291a6530  # frozen: v1.38.0
     hooks:
       - id: yamllint
   - repo: https://github.com/thlorenz/doctoc
@@ -46,3 +51,9 @@ repos:
     hooks:
       - id: doctoc
         args: ['--github', '--title', '## Table of Contents', '--update-only']
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: 1f1ac45c93d1c2ce36b71330252c489a5f4f2724  # frozen: v9.27.0
+    hooks:
+      - id: commitlint
+        stages: [commit-msg]
+        additional_dependencies: ['@commitlint/config-conventional']

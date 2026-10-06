@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "terraform-module",
+  "draft-pull-request": true,
+  "include-v-in-tag": true,
+  "include-component-in-tag": false,
+  "changelog-type": "default",
+  "changelog-path": "docs/CHANGELOG.md",
+  "bootstrap-sha": "62855dc3048ad27cc7bcc8b0771ad757627c765a",
+  "packages": {
+    ".": {
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "README.md"
+        }
+      ]
+    }
+  }
+}
