@@ -24,7 +24,7 @@ variables {
 run "logging_with_prefix" {
   command = plan
   variables {
-    logging = [{ log_bucket = "cf-logs", log_object_prefix = "audit/" }]
+    logging = { log_bucket = "cf-logs", log_object_prefix = "audit/" }
   }
 
   assert {
@@ -36,7 +36,7 @@ run "logging_with_prefix" {
 run "logging_without_prefix" {
   command = plan
   variables {
-    logging = [{ log_bucket = "cf-logs" }]
+    logging = { log_bucket = "cf-logs" }
   }
 
   assert {
@@ -45,10 +45,10 @@ run "logging_without_prefix" {
   }
 }
 
-run "encryption_key_string" {
+run "encryption_default_key" {
   command = plan
   variables {
-    encryption = ["projects/cf-unit-test/locations/eu/keyRings/test/cryptoKeys/bucket"]
+    encryption = { default_kms_key_name = "projects/cf-unit-test/locations/eu/keyRings/test/cryptoKeys/bucket" }
   }
 
   assert {
@@ -62,8 +62,8 @@ run "lifecycle_rules" {
   variables {
     versioning = true
     lifecycle_rules = [
-      { action = { type = "Delete" }, condition = { num_newer_versions = "30", with_state = "ARCHIVED" } },
-      { action = { type = "SetStorageClass", storage_class = "NEARLINE" }, condition = { age = "7", created_before = "2025-01-01", matches_storage_class = "STANDARD,REGIONAL", with_state = "LIVE" } }
+      { action = { type = "Delete" }, condition = { num_newer_versions = 30, with_state = "ARCHIVED" } },
+      { action = { type = "SetStorageClass", storage_class = "NEARLINE" }, condition = { age = 7, created_before = "2025-01-01", matches_storage_class = ["STANDARD", "REGIONAL"], with_state = "LIVE" } }
     ]
   }
 
@@ -128,5 +128,153 @@ run "public_access_enforced" {
   assert {
     condition     = google_storage_bucket.bucket.public_access_prevention == "enforced"
     error_message = "Public-access enforcement must reach the bucket."
+  }
+}
+
+run "explicit_null_optional_blocks" {
+  command = plan
+  variables {
+    logging    = null
+    encryption = null
+  }
+
+  assert {
+    condition     = length(google_storage_bucket.bucket.logging) == 0 && length(google_storage_bucket.bucket.encryption) == 0
+    error_message = "Null inputs must omit optional blocks."
+  }
+}
+
+run "empty_encryption_object" {
+  command = plan
+  variables { encryption = {} }
+  assert {
+    condition     = length(google_storage_bucket.bucket.encryption) == 1 && one(google_storage_bucket.bucket.encryption).default_kms_key_name == null && length(one(google_storage_bucket.bucket.encryption).google_managed_encryption_enforcement_config) == 0 && length(one(google_storage_bucket.bucket.encryption).customer_managed_encryption_enforcement_config) == 0 && length(one(google_storage_bucket.bucket.encryption).customer_supplied_encryption_enforcement_config) == 0
+    error_message = "An empty encryption object must not add a default key or enforcement rules."
+  }
+}
+
+run "google_managed_fullyrestricted" {
+  command = plan
+  variables {
+    encryption = { google_managed_encryption_enforcement_config = { restriction_mode = "FullyRestricted" } }
+  }
+  assert {
+    condition     = one(one(google_storage_bucket.bucket.encryption).google_managed_encryption_enforcement_config).restriction_mode == "FullyRestricted" && length(one(google_storage_bucket.bucket.encryption).customer_managed_encryption_enforcement_config) == 0 && length(one(google_storage_bucket.bucket.encryption).customer_supplied_encryption_enforcement_config) == 0
+    error_message = "The selected restriction must be forwarded without adding other enforcement blocks."
+  }
+}
+
+run "google_managed_notrestricted" {
+  command = plan
+  variables {
+    encryption = { google_managed_encryption_enforcement_config = { restriction_mode = "NotRestricted" } }
+  }
+  assert {
+    condition     = one(one(google_storage_bucket.bucket.encryption).google_managed_encryption_enforcement_config).restriction_mode == "NotRestricted" && length(one(google_storage_bucket.bucket.encryption).customer_managed_encryption_enforcement_config) == 0 && length(one(google_storage_bucket.bucket.encryption).customer_supplied_encryption_enforcement_config) == 0
+    error_message = "The selected restriction must be forwarded without adding other enforcement blocks."
+  }
+}
+
+run "customer_managed_fullyrestricted" {
+  command = plan
+  variables {
+    encryption = { customer_managed_encryption_enforcement_config = { restriction_mode = "FullyRestricted" } }
+  }
+  assert {
+    condition     = one(one(google_storage_bucket.bucket.encryption).customer_managed_encryption_enforcement_config).restriction_mode == "FullyRestricted" && length(one(google_storage_bucket.bucket.encryption).google_managed_encryption_enforcement_config) == 0 && length(one(google_storage_bucket.bucket.encryption).customer_supplied_encryption_enforcement_config) == 0
+    error_message = "The selected restriction must be forwarded without adding other enforcement blocks."
+  }
+}
+
+run "customer_managed_notrestricted" {
+  command = plan
+  variables {
+    encryption = { customer_managed_encryption_enforcement_config = { restriction_mode = "NotRestricted" } }
+  }
+  assert {
+    condition     = one(one(google_storage_bucket.bucket.encryption).customer_managed_encryption_enforcement_config).restriction_mode == "NotRestricted" && length(one(google_storage_bucket.bucket.encryption).google_managed_encryption_enforcement_config) == 0 && length(one(google_storage_bucket.bucket.encryption).customer_supplied_encryption_enforcement_config) == 0
+    error_message = "The selected restriction must be forwarded without adding other enforcement blocks."
+  }
+}
+
+run "customer_supplied_fullyrestricted" {
+  command = plan
+  variables {
+    encryption = { customer_supplied_encryption_enforcement_config = { restriction_mode = "FullyRestricted" } }
+  }
+  assert {
+    condition     = one(one(google_storage_bucket.bucket.encryption).customer_supplied_encryption_enforcement_config).restriction_mode == "FullyRestricted" && length(one(google_storage_bucket.bucket.encryption).google_managed_encryption_enforcement_config) == 0 && length(one(google_storage_bucket.bucket.encryption).customer_managed_encryption_enforcement_config) == 0
+    error_message = "The selected restriction must be forwarded without adding other enforcement blocks."
+  }
+}
+
+run "customer_supplied_notrestricted" {
+  command = plan
+  variables {
+    encryption = { customer_supplied_encryption_enforcement_config = { restriction_mode = "NotRestricted" } }
+  }
+  assert {
+    condition     = one(one(google_storage_bucket.bucket.encryption).customer_supplied_encryption_enforcement_config).restriction_mode == "NotRestricted" && length(one(google_storage_bucket.bucket.encryption).google_managed_encryption_enforcement_config) == 0 && length(one(google_storage_bucket.bucket.encryption).customer_managed_encryption_enforcement_config) == 0
+    error_message = "The selected restriction must be forwarded without adding other enforcement blocks."
+  }
+}
+
+run "google_managed_only" {
+  command = plan
+  variables {
+    encryption = {
+      google_managed_encryption_enforcement_config    = { restriction_mode = "NotRestricted" }
+      customer_managed_encryption_enforcement_config  = { restriction_mode = "FullyRestricted" }
+      customer_supplied_encryption_enforcement_config = { restriction_mode = "FullyRestricted" }
+    }
+  }
+  assert {
+    condition     = one(one(google_storage_bucket.bucket.encryption).google_managed_encryption_enforcement_config).restriction_mode == "NotRestricted" && one(one(google_storage_bucket.bucket.encryption).customer_managed_encryption_enforcement_config).restriction_mode == "FullyRestricted" && one(one(google_storage_bucket.bucket.encryption).customer_supplied_encryption_enforcement_config).restriction_mode == "FullyRestricted"
+    error_message = "The policy must allow exactly the selected encryption type. Google-managed-only must work without a KMS key."
+  }
+}
+
+run "customer_managed_only" {
+  command = plan
+  variables {
+    encryption = {
+      google_managed_encryption_enforcement_config    = { restriction_mode = "FullyRestricted" }
+      customer_managed_encryption_enforcement_config  = { restriction_mode = "NotRestricted" }
+      customer_supplied_encryption_enforcement_config = { restriction_mode = "FullyRestricted" }
+    }
+  }
+  assert {
+    condition     = one(one(google_storage_bucket.bucket.encryption).google_managed_encryption_enforcement_config).restriction_mode == "FullyRestricted" && one(one(google_storage_bucket.bucket.encryption).customer_managed_encryption_enforcement_config).restriction_mode == "NotRestricted" && one(one(google_storage_bucket.bucket.encryption).customer_supplied_encryption_enforcement_config).restriction_mode == "FullyRestricted"
+    error_message = "The policy must allow exactly the selected encryption type. Google-managed-only must work without a KMS key."
+  }
+}
+
+run "customer_supplied_only" {
+  command = plan
+  variables {
+    encryption = {
+      google_managed_encryption_enforcement_config    = { restriction_mode = "FullyRestricted" }
+      customer_managed_encryption_enforcement_config  = { restriction_mode = "FullyRestricted" }
+      customer_supplied_encryption_enforcement_config = { restriction_mode = "NotRestricted" }
+    }
+  }
+  assert {
+    condition     = one(one(google_storage_bucket.bucket.encryption).google_managed_encryption_enforcement_config).restriction_mode == "FullyRestricted" && one(one(google_storage_bucket.bucket.encryption).customer_managed_encryption_enforcement_config).restriction_mode == "FullyRestricted" && one(one(google_storage_bucket.bucket.encryption).customer_supplied_encryption_enforcement_config).restriction_mode == "NotRestricted"
+    error_message = "The policy must allow exactly the selected encryption type. Google-managed-only must work without a KMS key."
+  }
+}
+
+run "kms_with_explicit_permissions" {
+  command = plan
+  variables {
+    encryption = {
+      default_kms_key_name                            = "projects/cf-unit-test/locations/eu/keyRings/test/cryptoKeys/bucket"
+      customer_managed_encryption_enforcement_config  = { restriction_mode = "NotRestricted" }
+      customer_supplied_encryption_enforcement_config = { restriction_mode = "FullyRestricted" }
+    }
+  }
+  assert {
+    condition     = one(google_storage_bucket.bucket.encryption).default_kms_key_name == "projects/cf-unit-test/locations/eu/keyRings/test/cryptoKeys/bucket" && one(one(google_storage_bucket.bucket.encryption).customer_managed_encryption_enforcement_config).restriction_mode == "NotRestricted" && one(one(google_storage_bucket.bucket.encryption).customer_supplied_encryption_enforcement_config).restriction_mode == "FullyRestricted"
+    error_message = "A default KMS key and compatible enforcement settings must be preserved together."
   }
 }

@@ -1,0 +1,2 @@
+# Google-managed encryption is the recommended default; customer-managed keys are optional.
+GCP-0066

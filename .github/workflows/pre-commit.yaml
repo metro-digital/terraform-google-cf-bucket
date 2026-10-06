@@ -48,14 +48,15 @@ jobs:
           cache: 'true'
           github_token: ${{ github.token }}
 
-      - name: Install tfsec
+      - name: Install Trivy
         env:
-          TFSEC_VERSION: '1.28.14'
+          TRIVY_VERSION: '0.75.0'
         run: |
           curl --fail --location --retry 3 \
-            "https://github.com/aquasecurity/tfsec/releases/download/v${TFSEC_VERSION}/tfsec-linux-amd64" \
-            --output "${RUNNER_TEMP}/tfsec"
-          sudo install "${RUNNER_TEMP}/tfsec" /usr/local/bin/tfsec
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" \
+            --output "${RUNNER_TEMP}/trivy.tgz"
+          tar -xzf "${RUNNER_TEMP}/trivy.tgz" -C "${RUNNER_TEMP}" trivy
+          sudo install "${RUNNER_TEMP}/trivy" /usr/local/bin/trivy
 
       - name: Run pre-commit
         uses: pre-commit/action@v3.0.1

@@ -1,96 +1,178 @@
 # Cloud Foundation GCS bucket module
-[FAQ] | [CONTRIBUTING]
+
+[FAQ] | [CONTRIBUTING] | [CHANGELOG] | [MIGRATION]
 
 This module allows you to create and manage a Google Cloud Storage bucket.
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-## Table of Contents
+**Table of Contents**
+
+<!-- mdformat-toc start --slug=github --no-anchors --maxlevel=6 --minlevel=2 -->
 
 - [Compatibility](#compatibility)
+- [What the Module Adds Compared to the Resource](#what-the-module-adds-compared-to-the-resource)
+  - [Defaults and Explicit Configuration](#defaults-and-explicit-configuration)
+  - [Validation and IAM Behavior](#validation-and-iam-behavior)
 - [Usage](#usage)
-- [Inputs](#inputs)
-- [Outputs](#outputs)
+- [Encryption](#encryption)
+- [Lifecycle Rules](#lifecycle-rules)
+- [Soft Deletion](#soft-deletion)
+- [IAM Policy Ownership](#iam-policy-ownership)
+- [Tests and CI](#tests-and-ci)
 - [License](#license)
 
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<!-- mdformat-toc end -->
 
 ## Compatibility
 
-This module requires [terraform] version >=1.3.
+This module requires [terraform] >= 1.3 and `hashicorp/google` `>= 7.26, < 9.0`. Google provider
+majors 7 and 8 are covered by the compatibility test matrix. Running the mocked test suite requires
+Terraform >= 1.7.
+
+Version 2 changes the input interface and defaults. Follow the [migration guide][migration] before
+upgrading an existing bucket.
+
+## What the Module Adds Compared to the Resource
+
+The module exposes a selected, typed interface to `google_storage_bucket`, manages the bucket IAM
+policy, and validates configuration combinations. The comparison below uses the
+[Google provider resource defaults](https://github.com/hashicorp/terraform-provider-google/blob/v7.26.0/website/docs/r/storage_bucket.html.markdown)
+from the minimum supported provider version.
+
+### Defaults and Explicit Configuration
+
+| Setting                     | Direct resource                                      | Module                                                                      |
+| --------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------- |
+| Uniform bucket-level access | Defaults to `false`                                  | Defaults to `true`, disabling ACL-based access                              |
+| Location                    | Required, with no default                            | Defaults to `EU`                                                            |
+| Project                     | Can inherit the provider's project                   | Requires an explicit `project_id`                                           |
+| Soft deletion               | An omitted block preserves the server-side policy    | Always configures a retention period; defaults to `604800` seconds (7 days) |
+| Versioning                  | Optional block; new buckets have versioning disabled | Always configures `enabled`; defaults to `false`                            |
+
+Explicit configuration matters when adopting an existing bucket. In particular, the module's default
+can replace an existing soft-delete retention period with seven days or disable existing versioning.
+Supply the intended values and review the plan before applying.
+
+Other defaults follow the resource's normal behavior: `storage_class = "STANDARD"`,
+`public_access_prevention = "inherited"`, no lifecycle rules, no logging destination, and no custom
+encryption key or encryption enforcement restrictions. Google-managed encryption remains the default
+for new buckets. `force_destroy` is not exposed and remains `false`; this is not complete protection
+against deleting an empty bucket.
+
+### Validation and IAM Behavior
+
+- Encryption checks key-name format, allowed restriction modes, restrictions blocking every
+  encryption type, and conflicting default-key restrictions.
+- Lifecycle checks action/class combinations, nonempty conditions, whole positive ages and version
+  counts, valid dates, states and storage classes. The module supports a subset of the resource's
+  lifecycle fields.
+- Soft-delete retention must be whole seconds within 7 to 90 days, or `0` to disable. Project IDs,
+  logging destinations and IAM role names are also validated.
+- A separate IAM resource owns the entire bucket policy. The module explicitly merges legacy project
+  principals unless `purge_legacy_roles = true`, removes empty bindings and deduplicates members.
+  Inherited project and organization grants remain outside this policy's scope.
+- Setting `uniform_access = false` adds the Cloud Foundation exemption label
+  `cf_no_require_bucket_policy_only = "true"`.
+
+These checks validate configuration, not live permissions, KMS availability or workload retention
+requirements. See the feature guides below and
+[Module safeguards and possible extensions](docs/BUCKET_FEATURES.md) for details.
 
 ## Usage
 
 ```hcl
 module "tf-state-bucket" {
-  source         = "metro-digital/cf-bucket/google"
+  source  = "metro-digital/cf-bucket/google"
+  version = "~> 2.0"
+
   project_id     = "metro-cf-example-ex1-e8v"
   name           = "tf-state-metro-cf-example-ex1-e8v"
   location       = "EU"
-  storage_class  = "MULTI_REGIONAL"
+  storage_class  = "STANDARD"
   uniform_access = true
   versioning     = true
 
-  lifecycle_rules = [
-    {
-      action = {
-        type          = "Delete"
-      },
-      condition = {
-        num_newer_versions = 30
-      }
-    }
-  ]
+  lifecycle_rules = [{
+    action    = { type = "Delete" }
+    condition = { num_newer_versions = 30 }
+  }]
 
+  iam_bindings = {
+    "roles/storage.objectViewer" = ["group:readers@example.com"]
+  }
+
+  # Optional singleton inputs:
+  # logging = { log_bucket = "audit-log-bucket", log_object_prefix = "state/" }
+  # encryption = { default_kms_key_name = "projects/PROJECT/locations/eu/keyRings/RING/cryptoKeys/KEY" }
 }
 ```
 
-<!-- BEGIN_TF_DOCS -->
-## Inputs
+The example targets the forthcoming v2 release. For local development, use
+`source = "./path/to/terraform-google-cf-bucket"` and omit `version`. A public Registry example is
+available in [examples/basic](examples/basic).
 
-| Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
-| name | Bucket name | `string` | n/a | yes |
-| project_id | GCP project ID | `string` | n/a | yes |
-| additional_legacy_bucket_owners | List of additional users/groups/service accounts with role roles/storage.legacyBucketOwner on bucket level<br/><br/>If `purge_legacy_roles` is set to true, this list becomes authoritative.<br/>Otherwise the default permissions will be added automatically. | `list(string)` | `[]` | no |
-| additional_legacy_bucket_readers | List of additional users/groups/service accounts with role roles/storage.legacyBucketReader on bucket level<br/><br/>If `purge_legacy_roles` is set to true, this list becomes authoritative.<br/>Otherwise the default permissions will be added automatically. | `list(string)` | `[]` | no |
-| additional_legacy_bucket_writers | List of additional users/groups/service accounts with role roles/storage.legacyBucketWriter on bucket level<br/><br/>If `purge_legacy_roles` is set to true, this list becomes authoritative.<br/>Otherwise the default permissions will be added automatically. | `list(string)` | `[]` | no |
-| additional_legacy_object_owners | List of additional users/groups/service accounts with role roles/storage.legacyObjectOwner on bucket level<br/><br/>If `purge_legacy_roles` is set to true, this list becomes authoritative.<br/>Otherwise the default permissions will be added automatically. | `list(string)` | `[]` | no |
-| additional_legacy_object_readers | List of additional users/groups/service accounts with role roles/storage.legacyObjectReader on bucket level<br/><br/>If `purge_legacy_roles` is set to true, this list becomes authoritative.<br/>Otherwise the default permissions will be added automatically. | `list(string)` | `[]` | no |
-| encryption | Bucket's encryption configuration. Please provide the id of a Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified. You must pay attention to whether the crypto key is available in the location that this bucket is created in | `list(string)` | `[]` | no |
-| labels | A set of key/value label pairs to assign to the bucket | `map(string)` | `{}` | no |
-| lifecycle_rules | List of lifecycle rules to configure. Format is the same as described in provider documentation https://www.terraform.io/docs/providers/google/r/storage_bucket.html#lifecycle_rule except condition.matches_storage_class should be a comma delimited string.<br/><br/>Set of objects:<br/>  action:<br/>    map<br/>      * type - The type of the action of this Lifecycle Rule. Supported values: Delete and SetStorageClass.<br/>      * storage_class - (Required if action type is SetStorageClass) The target Storage Class of objects affected by this Lifecycle Rule.<br/><br/>  condition:<br/>    map:<br/>      * age - (Optional) Minimum age of an object in days to satisfy this condition.<br/>      * created_before - (Optional) Creation date of an object in RFC 3339 (e.g. 2017-06-13) to satisfy this condition.<br/>      * with_state - (Optional) Match to live and/or archived objects. Supported values include: "LIVE", "ARCHIVED", "ANY".<br/>      * matches_storage_class - (Optional) Comma delimited string for storage class of objects to satisfy this condition. Supported values include: MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, DURABLE_REDUCED_AVAILABILITY.<br/>      * num_newer_versions - (Optional) Relevant only for versioned objects. The number of newer versions of an object to satisfy this condition.<br/><br/>Examples:<pre>lifecycle_rules = [<br/>  {<br/>    action = {<br/>      type          = "SetStorageClass"<br/>      storage_class = "NEARLINE"<br/>    },<br/>    condition = {<br/>      age                   = "7"<br/>      matches_storage_class = "REGIONAL"<br/>    }<br/>  },<br/>  {<br/>    action = {<br/>      type          = "SetStorageClass"<br/>      storage_class = "COLDLINE"<br/>    },<br/>    condition = {<br/>      age                   = "30"<br/>      matches_storage_class = "NEARLINE"<br/>    }<br/>  },<br/>]</pre> | <pre>set(object({<br/>    action    = map(string)<br/>    condition = map(string)<br/>  }))</pre> | `[]` | no |
-| location | The GCS location - see https://cloud.google.com/storage/docs/bucket-locations | `string` | `"EU"` | no |
-| logging | Bucket's Access & Storage Logs configuration<br/><br/>The logging block supports:<br/>  * log_bucket - (Required) The bucket that will receive log objects.<br/>  * log_object_prefix - (Optional, Computed) The object prefix for log objects. If it's not provided, by default GCS sets this to this bucket's name.<br/><br/>Example:<pre>logging = [{<br/>  log_bucket        = "some-bucket-to-log-into"<br/>  log_object_prefix = "my-prefix"<br/>}]</pre> | <pre>set(object({<br/>    log_bucket        = string<br/>    log_object_prefix = optional(string)<br/>  }))</pre> | `[]` | no |
-| public_access_prevention | Bucket's public access prevention configuration. Must be either 'inherited' or 'enforced'. A bucket's public access prevention configuration must at least be as restrictive as the active organisation policy. It is recommended to use the public access prevention configuration 'inherited' in an organisation that already controls public access prevention via an organisation policy. | `string` | `"inherited"` | no |
-| purge_legacy_roles | If enabled the module will purge the default users from roles/storage.legacy* roles | `bool` | `false` | no |
-| soft_delete_retention_duration_seconds | Duration in seconds controlling the soft delete retention of storage object. The value must be in between 604800 seconds (7 days) and 7776000 (90 days). To disable the feature, set the value to 0. | `number` | `604800` | no |
-| storage_admins | list of users with role roles/storage.admin on bucket level (authoritative) | `list(string)` | `[]` | no |
-| storage_class | Bucket's Storage Class | `string` | `"REGIONAL"` | no |
-| storage_object_admins | list of users with role roles/storage.objectAdmin on bucket level (authoritative) | `list(string)` | `[]` | no |
-| storage_object_creators | list of users with role roles/storage.objectCreator on bucket level (authoritative) | `list(string)` | `[]` | no |
-| storage_object_viewers | list of users with role roles/storage.objectViewer on bucket level (authoritative) | `list(string)` | `[]` | no |
-| uniform_access | Enables Uniform bucket-level access to a bucket | `bool` | `true` | no |
-| versioning | Enable Versioning | `bool` | `false` | no |
+> [!TIP]
+> A detailed description of input variables and output values can be found
+> [here](./docs/TERRAFORM.md).
 
-## Outputs
+## Encryption
 
-| Name | Description |
-| ---- | ----------- |
-| location | Bucket location |
-| name | Bucket name |
-| project | Bucket Project ID |
-| storage_class | Bucket's Storage Class |
-| versioning | Versioning configuration |
-<!-- END_TF_DOCS -->
+Google-managed encryption is recommended and is the default for new buckets when `encryption` is
+omitted. The typed encryption object can set a default KMS key or restrict allowed encryption types.
+Validation catches malformed key names and conflicting restrictions.
+
+See [Bucket encryption](docs/ENCRYPTION.md) for Google-managed-only and KMS examples, prerequisites,
+validation limits and effects on existing objects.
+
+## Lifecycle Rules
+
+No lifecycle rules are enabled by default. Typed rules support deletion and storage-class
+transitions with validated conditions. Choosing a rule's scope and retention period remains the
+caller's responsibility.
+
+See [Object lifecycle rules](docs/LIFECYCLE_RULES.md) for examples and the interaction with object
+versioning, soft deletion and storage costs.
+
+## Soft Deletion
+
+The module retains soft-deleted data for seven days by default. Retention must be whole seconds
+between 7 and 90 days, or zero to disable it.
+
+See [Soft deletion and recovery](docs/SOFT_DELETION.md) for recovery-window choices, policy changes,
+cost considerations and interaction with lifecycle rules.
+
+## IAM Policy Ownership
+
+This module owns the **entire bucket IAM policy**. Grants managed outside the module are replaced;
+put every intended bucket binding in `iam_bindings` and avoid managing the same policy with other
+bucket IAM resources.
+
+By default, the module adds project owner/editor principals to legacy owner roles and project
+viewers to legacy reader roles. `purge_legacy_roles = true` removes these defaults while retaining
+explicitly supplied bindings. Empty bindings are omitted and duplicate members are removed.
+
+See [Module safeguards and possible extensions](docs/BUCKET_FEATURES.md) for the checks already
+provided by v2 and recommendations for future module features.
+
+## Tests and CI
+
+Pull requests run formatting, initialization, validation and the mocked suite across Google provider
+majors 7–8, with a separate minimum-provider check at 7.26.0. Tests create no cloud resources.
+Results appear in job summaries and, after the publisher is merged into `main`, one updated PR
+comment.
+
+See [CONTRIBUTING] for local commands, CI details and the release process.
 
 ## License
 
 This project is licensed under the terms of the [Apache License 2.0](LICENSE)
 
-This [terraform] module depends on providers from HashiCorp, Inc. which are licensed under MPL-2.0. You can obtain the respective source code for these provider here:
-  * [`hashicorp/google`](https://github.com/hashicorp/terraform-provider-google)
+This [terraform] module depends on providers from HashiCorp, Inc. which are licensed under MPL-2.0.
+You can obtain the respective source code for these provider here:
 
+- [`hashicorp/google`](https://github.com/hashicorp/terraform-provider-google)
+
+[changelog]: ./docs/CHANGELOG.md
+[contributing]: ./docs/CONTRIBUTING.md
+[faq]: ./docs/FAQ.md
+[migration]: ./docs/MIGRATION.md
 [terraform]: https://terraform.io/
-[FAQ]: ./docs/FAQ.md
-[CONTRIBUTING]: docs/CONTRIBUTING.md
